@@ -1,16 +1,9 @@
-import { Controller, Get, Param, Redirect, Res } from '@nestjs/common';
-import type { Response } from 'express';
+import { Controller, Get, Param, Redirect } from '@nestjs/common';
 import { LinkService } from './modules/link/link.service';
 
 @Controller()
 export class AppController {
   constructor(private readonly linkService: LinkService) {}
-
-  @Get()
-  getApp(@Res() res: Response): void {
-    const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
-    res.redirect(302, clientUrl);
-  }
 
   @Get('r/:code')
   @Redirect()

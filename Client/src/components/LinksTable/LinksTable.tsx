@@ -15,7 +15,7 @@ export const LinksTable = () => {
   const { showAlert } = useContext(AlertContext);
 
   useEffect(() => {
-    fetch(`${apiUrl}/link?email=${user?.email}`)
+    fetch(`${apiUrl}/link?email=${user?.email}`, { credentials: "include" })
       .then((response) => {
         if (!response.ok) {
           response.json().then((data) =>
@@ -23,7 +23,7 @@ export const LinksTable = () => {
               type: "info",
               title: "Info",
               message: (data.message as string) || "Failed to fetch links",
-            })
+            }),
           );
           return [];
         }

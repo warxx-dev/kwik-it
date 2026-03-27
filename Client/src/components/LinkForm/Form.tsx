@@ -29,6 +29,7 @@ export const Form = () => {
           code: customName,
           email: user?.email,
         }),
+        credentials: "include",
       });
 
       if (res.ok) {

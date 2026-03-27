@@ -9,18 +9,24 @@ import {
   Patch,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { LinkService } from './link.service';
 import { CreateLinkDto, UpdateLinkDto } from './dto';
 import { Link } from './entities/link.entity';
 import { LinkData } from './types';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('link')
 export class LinkController {
   constructor(private readonly linkService: LinkService) {}
 
   @Get()
+  @UseGuards(JwtAuthGuard)
   async find(@Query('email') email: string): Promise<Link[]> {
+    if (!email) {
+      throw new NotFoundException('Email query parameter is required.');
+    }
     const result = await this.linkService.getLinks(email);
     return result.fold(
       (links) => {
@@ -46,6 +52,7 @@ export class LinkController {
   }
 
   @Get('code/:code')
+  @UseGuards(JwtAuthGuard)
   async findByCode(@Param('code') code: string): Promise<Link> {
     const result = await this.linkService.getLinkByCode(code);
     return result.fold(
@@ -70,6 +77,7 @@ export class LinkController {
   }
 
   @Get(':id')
+  @UseGuards(JwtAuthGuard)
   async findOne(@Param('id') id: number): Promise<Link> {
     const result = await this.linkService.getLink(id);
     return result.fold(
@@ -94,6 +102,7 @@ export class LinkController {
   }
 
   @Post()
+  @UseGuards(JwtAuthGuard)
   async create(@Body() body: CreateLinkDto): Promise<LinkData> {
     const { originalLink, code, email } = body;
     const result = await this.linkService.createLink({
@@ -125,6 +134,7 @@ export class LinkController {
   }
 
   @Patch(':id')
+  @UseGuards(JwtAuthGuard)
   async update(
     @Param('id') id: number,
     @Body() body: UpdateLinkDto,
@@ -156,6 +166,7 @@ export class LinkController {
   }
 
   @Delete(':code')
+  @UseGuards(JwtAuthGuard)
   async remove(@Param('code') code: string): Promise<string> {
     const result = await this.linkService.removeLink(code);
     return result.fold(

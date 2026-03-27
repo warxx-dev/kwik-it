@@ -79,7 +79,7 @@ export class LinkService {
         originalLink = 'https://' + originalLink;
 
       let generatedCode: string;
-      if (code.length === 0) {
+      if (!code || code.length === 0) {
         generatedCode = generateCode(5);
         let linkResult = await this.getLinkByCode(generatedCode);
         while (linkResult.isSuccess) {
