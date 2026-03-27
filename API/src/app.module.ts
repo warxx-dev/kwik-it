@@ -13,18 +13,23 @@ import { RedirectMiddleware } from './middleware/redirect.middleware';
       isGlobal: true,
     }),
     TypeOrmModule.forRoot({
-      type: 'postgres',
-      url: process.env.DATABASE_URL,
-      autoLoadEntities: true,
-      synchronize: false,
-      ssl:
-        process.env.NODE_ENV === 'production'
-          ? { rejectUnauthorized: false }
-          : false,
+      type: 'sqlite',
+      // 1. Inyectamos el driver de LibSQL
+      driver: require('@libsql/sqlite3'),
+      database: `${process.env.TURSO_DATABASE_URL}?authToken=${process.env.TURSO_AUTH_TOKEN}`,
+      // 2. IMPORTANTE: Esta es la clave. Engañamos a TypeORM diciéndole
+      // que el "package" que debe buscar es el de libsql, no sqlite3.
       extra: {
-        max: 10,
-        connectionTimeoutMillis: 10000,
+        authToken: process.env.TURSO_AUTH_TOKEN,
       },
+      // Forzamos a que no busque el paquete 'sqlite3'
+      // @ts-ignore
+      driverPackage: require('@libsql/sqlite3'),
+
+      entities: [__dirname + '/**/*.entity{.ts,.js}'],
+      autoLoadEntities: true,
+      synchronize: true,
+      logging: true,
     }),
     LinkModule,
     UserModule,

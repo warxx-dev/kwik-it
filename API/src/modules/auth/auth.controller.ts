@@ -45,6 +45,7 @@ export class AuthController {
     @Res({ passthrough: true }) res: express.Response,
   ) {
     const result = await this.authService.register(registerData);
+    console.log('Register result:', result); // Debug log
     return result.fold(
       (data) => {
         res.cookie('access_token', data.access_token, {
