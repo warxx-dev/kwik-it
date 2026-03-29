@@ -1,9 +1,9 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
   Get,
-  InternalServerErrorException,
   NotFoundException,
   Param,
   Patch,
@@ -13,9 +13,8 @@ import {
 } from '@nestjs/common';
 import { LinkService } from './link.service';
 import { CreateLinkDto, UpdateLinkDto } from './dto';
-import { Link } from './entities/link.entity';
-import { LinkData } from './types';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Link } from 'src/generated/prisma/client';
 
 @Controller('link')
 export class LinkController {
@@ -27,110 +26,30 @@ export class LinkController {
     if (!email) {
       throw new NotFoundException('Email query parameter is required.');
     }
-    const result = await this.linkService.getLinks(email);
-    return result.fold(
-      (links) => {
-        return links;
-      },
-      (error) => {
-        if (typeof error === 'string') {
-          if (error.includes('not found')) {
-            throw new NotFoundException(error);
-          }
-          throw new InternalServerErrorException(error);
-        }
-
-        if (error instanceof Error) {
-          throw new InternalServerErrorException(
-            'Error retrieving links due to a system failure.',
-          );
-        }
-
-        throw new InternalServerErrorException('An unknown error occurred.');
-      },
-    );
+    const normalizedEmail = email
+      .replace(/^"+|"+$/g, '')
+      .trim()
+      .toLowerCase();
+    if (!normalizedEmail) {
+      throw new BadRequestException('Email query parameter is invalid.');
+    }
+    console.log(`Fetching links for email: ${normalizedEmail}`);
+    return await this.linkService.getAllLinksByEmail(normalizedEmail);
   }
 
-  @Get('code/:code')
+  @Get(':code')
   @UseGuards(JwtAuthGuard)
   async findByCode(@Param('code') code: string): Promise<Link> {
-    const result = await this.linkService.getLinkByCode(code);
-    return result.fold(
-      (link) => link,
-      (error) => {
-        if (typeof error === 'string') {
-          if (error.includes('not found')) {
-            throw new NotFoundException(error);
-          }
-          throw new InternalServerErrorException(error);
-        }
-
-        if (error instanceof Error) {
-          throw new InternalServerErrorException(
-            'Error retrieving link due to a system failure.',
-          );
-        }
-
-        throw new InternalServerErrorException('An unknown error occurred.');
-      },
-    );
-  }
-
-  @Get(':id')
-  @UseGuards(JwtAuthGuard)
-  async findOne(@Param('id') id: number): Promise<Link> {
-    const result = await this.linkService.getLink(id);
-    return result.fold(
-      (link) => link,
-      (error) => {
-        if (typeof error === 'string') {
-          if (error.includes('not found')) {
-            throw new NotFoundException(error);
-          }
-          throw new InternalServerErrorException(error);
-        }
-
-        if (error instanceof Error) {
-          throw new InternalServerErrorException(
-            'Error retrieving link due to a system failure.',
-          );
-        }
-
-        throw new InternalServerErrorException('An unknown error occurred.');
-      },
-    );
+    return await this.linkService.getLinkByCode(code);
   }
 
   @Post()
-  @UseGuards(JwtAuthGuard)
-  async create(@Body() body: CreateLinkDto): Promise<LinkData> {
+  async create(@Body() body: CreateLinkDto): Promise<Link> {
     const { originalLink, code, email } = body;
-    const result = await this.linkService.createLink({
-      originalLink,
-      code,
+    return await this.linkService.createLink({
+      data: { originalLink, code },
       email,
     });
-    return result.fold(
-      (link) => {
-        return link;
-      },
-      (error) => {
-        if (typeof error === 'string') {
-          if (error.includes('not found')) {
-            throw new NotFoundException(error);
-          }
-          throw new InternalServerErrorException(error);
-        }
-
-        if (error instanceof Error) {
-          throw new InternalServerErrorException(
-            'Error creating link due to a system failure.',
-          );
-        }
-
-        throw new InternalServerErrorException('An unknown error occurred.');
-      },
-    );
   }
 
   @Patch(':id')
@@ -138,55 +57,17 @@ export class LinkController {
   async update(
     @Param('id') id: number,
     @Body() body: UpdateLinkDto,
-  ): Promise<LinkData> {
+  ): Promise<Link> {
     const { code, originalLink } = body;
-    const result = await this.linkService.updateLink(id, {
+    return await this.linkService.updateLink(id, {
       code,
       originalLink,
     });
-    return result.fold(
-      (link) => link,
-      (error) => {
-        if (typeof error === 'string') {
-          if (error.includes('not found')) {
-            throw new NotFoundException(error);
-          }
-          throw new InternalServerErrorException(error);
-        }
-
-        if (error instanceof Error) {
-          throw new InternalServerErrorException(
-            'Error updating link due to a system failure.',
-          );
-        }
-
-        throw new InternalServerErrorException('An unknown error occurred.');
-      },
-    );
   }
 
-  @Delete(':code')
+  @Delete(':id')
   @UseGuards(JwtAuthGuard)
-  async remove(@Param('code') code: string): Promise<string> {
-    const result = await this.linkService.removeLink(code);
-    return result.fold(
-      (link) => link,
-      (error) => {
-        if (typeof error === 'string') {
-          if (error.includes('not found')) {
-            throw new NotFoundException(error);
-          }
-          throw new InternalServerErrorException(error);
-        }
-
-        if (error instanceof Error) {
-          throw new InternalServerErrorException(
-            'Error deleting link due to a system failure.',
-          );
-        }
-
-        throw new InternalServerErrorException('An unknown error occurred.');
-      },
-    );
+  async remove(@Param('id') id: number): Promise<string> {
+    return await this.linkService.removeLink(id);
   }
 }

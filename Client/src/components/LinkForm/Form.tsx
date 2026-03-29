@@ -1,4 +1,4 @@
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import { AlertContext } from "../../context/alertContext";
 import { Input } from "../UI/Input";
 import { Button } from "../UI/Button";
@@ -11,6 +11,7 @@ const apiUrl = import.meta.env.VITE_API_URL;
 export const Form = () => {
   const { showAlert } = useContext(AlertContext);
   const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -21,6 +22,7 @@ export const Form = () => {
     const customName = formData.get("customName")?.toString() ?? "";
 
     try {
+      setLoading(true);
       const res = await fetch(`${apiUrl}/link`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -29,7 +31,6 @@ export const Form = () => {
           code: customName,
           email: user?.email,
         }),
-        credentials: "include",
       });
 
       if (res.ok) {
@@ -39,6 +40,7 @@ export const Form = () => {
           message: "Your shortened link has been created successfully.",
         });
         form.reset();
+        setLoading(false);
       } else {
         const errorData = await res.json();
         showAlert({
@@ -47,6 +49,7 @@ export const Form = () => {
           message: errorData.message || "There was an error creating the link.",
         });
         form.reset();
+        setLoading(false);
       }
     } catch (error) {
       showAlert({
@@ -55,6 +58,7 @@ export const Form = () => {
         message:
           (error as Error).message || "There was an error creating the link.",
       });
+      setLoading(false);
     }
   };
 
@@ -91,7 +95,7 @@ export const Form = () => {
       </p>
 
       <Button
-        text="Shorten Link"
+        text={loading ? "Creating..." : "Shorten link"}
         type="submit"
         icon={<ScissorsIcon size={16}></ScissorsIcon>}
         className="w-full"

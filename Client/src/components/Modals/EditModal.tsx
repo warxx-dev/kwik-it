@@ -37,6 +37,7 @@ export const EditModal = ({
           code: updatedShortCode,
           originalLink: updatedOriginalLink,
         }),
+        credentials: "include",
       });
 
       if (res.ok) {
@@ -54,8 +55,8 @@ export const EditModal = ({
                   code: updatedShortCode,
                   originalLink: updatedOriginalLink,
                 }
-              : link
-          )
+              : link,
+          ),
         );
       }
     } catch (error) {
@@ -103,6 +104,6 @@ export const EditModal = ({
         </nav>
       </form>
     </motion.section>,
-    document.body
+    document.body,
   );
 };

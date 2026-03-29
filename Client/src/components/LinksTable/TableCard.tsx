@@ -126,7 +126,7 @@ export const TableCard = ({
         {deleteModal && (
           <>
             <ModalBackground onClick={() => setDeleteModal(false)} />
-            <DeleteModal code={code} setDeleteModal={setDeleteModal} />
+            <DeleteModal id={id} setDeleteModal={setDeleteModal} />
           </>
         )}
       </AnimatePresence>

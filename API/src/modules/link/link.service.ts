@@ -1,79 +1,68 @@
 import {
-  forwardRef,
-  Inject,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { CreateLinkDto, UpdateLinkDto } from './dto';
-import { Repository, LessThan, IsNull } from 'typeorm';
-import { Link } from './entities/link.entity';
-import { InjectRepository } from '@nestjs/typeorm';
-import { generateCode, Result } from '../../utils';
-import { LinkData, LinkError } from './types';
-import { UserService } from '../user/user.service';
+import { generateCode } from '../../utils';
 import { Cron } from '@nestjs/schedule/dist/decorators/cron.decorator';
 import { CronExpression } from '@nestjs/schedule/dist/enums/cron-expression.enum';
+import { PrismaService } from 'src/prisma.service';
+import { Link, Prisma } from 'src/generated/prisma/client';
 
 @Injectable()
 export class LinkService {
-  constructor(
-    @InjectRepository(Link) private readonly linkRepository: Repository<Link>,
-    @Inject(forwardRef(() => UserService))
-    private readonly userService: UserService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  @Cron(CronExpression.EVERY_DAY_AT_3AM)
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async cleanExpiredAnonymousLinks() {
     const oneDayAgo = new Date();
     oneDayAgo.setDate(oneDayAgo.getDate() - 1);
-
-    await this.linkRepository.delete({
-      user: IsNull(),
-      createdAt: LessThan(oneDayAgo),
+    await this.prisma.link.deleteMany({
+      where: {
+        user: null,
+        createdAt: { lt: oneDayAgo },
+      },
     });
   }
 
-  async getLinks(email: string): Promise<Result<Link[], LinkError>> {
+  async getAllLinksByEmail(email: string): Promise<Link[]> {
     try {
-      const links = await this.linkRepository.find({
-        where: { user: { email } },
+      const normalizedEmail = email.trim().toLowerCase();
+      const links = await this.prisma.link.findMany({
+        where: { userEmail: normalizedEmail },
       });
-      return Result.success(links);
-    } catch (e) {
-      return Result.failure(e as Error);
-    }
-  }
-  async getLink(id: number): Promise<Result<Link, LinkError>> {
-    try {
-      const link = await this.linkRepository.findOne({ where: { id } });
-
-      if (!link) {
-        return Result.failure(`Link #${id} not found`);
-      }
-      return Result.success(link);
+      console.log(`Found ${links.length} links for email: ${normalizedEmail}`);
+      return links;
     } catch (error) {
-      return Result.failure(error as Error);
+      throw new InternalServerErrorException(error as Error);
     }
   }
 
-  async getLinkByCode(code: string): Promise<Result<Link, LinkError>> {
+  async getLinkByCode(code: string): Promise<Link> {
     try {
-      const link = await this.linkRepository.findOne({ where: { code } });
+      const link = await this.prisma.link.findUnique({
+        where: { code },
+      });
       if (!link) {
-        return Result.failure(`The link with the code ${code} is not found!`);
+        throw new NotFoundException(
+          `The link with the code ${code} is not found!`,
+        );
       }
-      return Result.success(link);
+      return link;
     } catch (error) {
-      return Result.failure(error as Error);
+      throw new InternalServerErrorException(error as Error);
     }
   }
 
-  async createLink(
-    linkData: CreateLinkDto,
-  ): Promise<Result<LinkData, LinkError>> {
+  async createLink({
+    data,
+    email,
+  }: {
+    data: Prisma.LinkCreateInput;
+    email: string;
+  }): Promise<Link> {
     try {
-      let { originalLink, code } = linkData;
-      const { email } = linkData;
+      let { originalLink, code } = data;
 
       if (!originalLink.startsWith('http'))
         originalLink = 'https://' + originalLink;
@@ -81,94 +70,110 @@ export class LinkService {
       let generatedCode: string;
       if (!code || code.length === 0) {
         generatedCode = generateCode(5);
-        let linkResult = await this.getLinkByCode(generatedCode);
-        while (linkResult.isSuccess) {
+        let link = await this.prisma.link.findUnique({
+          where: { code: generatedCode },
+        });
+        while (link) {
           generatedCode = generateCode(5);
-          linkResult = await this.getLinkByCode(generatedCode);
+          link = await this.prisma.link.findUnique({
+            where: { code: generatedCode },
+          });
         }
         code = generatedCode;
       }
       if (email) {
-        const userResult = await this.userService.findByEmail(email);
-        return await userResult.fold(
-          async (user) => {
-            await this.linkRepository.save({ originalLink, code, user });
-            return Result.success({ originalLink, code });
+        const normalizedEmail = email.trim().toLowerCase();
+        const link = await this.prisma.link.create({
+          data: {
+            originalLink,
+            code,
+            user: { connect: { email: normalizedEmail } },
           },
-          // eslint-disable-next-line @typescript-eslint/require-await
-          async (error) => {
-            if (typeof error === 'string')
-              return Result.failure<LinkData, LinkError>(error);
-            return Result.failure<LinkData, LinkError>(error);
-          },
-        );
+        });
+        if (!link) {
+          throw new InternalServerErrorException('Link could not be created');
+        }
+        return link;
       } else {
-        await this.linkRepository.save({ originalLink, code });
-        return Result.success({ originalLink, code });
+        const link = await this.prisma.link.create({
+          data: {
+            originalLink,
+            code,
+          },
+        });
+        if (!link) {
+          throw new InternalServerErrorException('Link could not be created');
+        }
+        return link;
       }
     } catch (error) {
-      return Result.failure(error as Error);
+      throw new InternalServerErrorException(error as Error);
     }
   }
 
   async updateLink(
     id: number,
-    { code, originalLink }: UpdateLinkDto,
-  ): Promise<Result<LinkData, LinkError>> {
+    { code, originalLink }: Prisma.LinkUpdateInput,
+  ): Promise<Link> {
     try {
-      const linkToUpdate = await this.linkRepository.findOne({ where: { id } });
-
-      if (!linkToUpdate) return Result.failure('Link not found');
-
-      await this.linkRepository.update(id, {
-        originalLink,
-        code,
+      const linkToUpdate = await this.prisma.link.findUnique({
+        where: { id },
       });
 
-      const linkUpdated = await this.linkRepository.findOne({ where: { id } });
-
-      if (!linkUpdated) {
-        return Result.failure('Updated link could not be retrieved');
+      if (!linkToUpdate) {
+        throw new NotFoundException('Link not found');
       }
 
-      return Result.success({
-        originalLink: linkUpdated.originalLink,
-        code: linkUpdated.code,
+      const linkUpdated = await this.prisma.link.update({
+        where: { id },
+        data: { originalLink, code },
       });
+
+      if (!linkUpdated) {
+        throw new InternalServerErrorException('Failed to update link');
+      }
+
+      return linkUpdated;
     } catch (error) {
-      return Result.failure(error as Error);
+      throw new InternalServerErrorException(error as Error);
     }
   }
 
-  async removeLink(code: string): Promise<Result<string, LinkError>> {
-    console.log('Attempting to delete link with code:', code);
+  async removeLink(id: number): Promise<string> {
     try {
-      const link = await this.linkRepository.findOne({
-        where: { code },
+      const link = await this.prisma.link.findUnique({
+        where: { id },
       });
 
-      console.log('Link found for deletion:', link);
+      if (!link) {
+        throw new NotFoundException('Link not found');
+      }
 
-      if (!link) throw new NotFoundException('Link not found');
-
-      await this.linkRepository.delete({ code });
-
-      const deletedLink = await this.linkRepository.findOne({
-        where: { code },
+      await this.prisma.link.delete({
+        where: { id },
       });
 
-      console.log('Verifying deletion, link found:', deletedLink);
+      const deletedLink = await this.prisma.link.findUnique({
+        where: { id },
+      });
 
-      if (!deletedLink) return Result.success('Link deleted successfully');
+      if (!deletedLink) {
+        return 'Link deleted successfully';
+      }
 
-      return Result.failure('Error occurred while deleting link');
+      throw new InternalServerErrorException(
+        'Error occurred while deleting link',
+      );
     } catch (error) {
-      return Result.failure(error as Error);
+      throw new InternalServerErrorException(error as Error);
     }
   }
 
   async incrementClicks(link: Link): Promise<void> {
     link.clicks += 1;
-    await this.linkRepository.save(link);
+    await this.prisma.link.update({
+      where: { id: link.id },
+      data: { clicks: link.clicks },
+    });
   }
 }

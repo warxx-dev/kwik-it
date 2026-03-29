@@ -1,0 +1,31 @@
+generator client {
+  provider        = "prisma-client-js"
+  output          = "../src/generated/prisma"
+  moduleFormat    = "cjs"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  email     String   @id
+  password  String?
+  name      String?
+  picture   String?
+  links     Link[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Link {
+  id           Int      @id @default(autoincrement())
+  originalLink String
+  code         String?  @unique
+  clicks       Int      @default(0)
+  userEmail    String?
+  user         User?    @relation(fields: [userEmail], references: [email])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+

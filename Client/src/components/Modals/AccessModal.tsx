@@ -13,26 +13,19 @@ export const LogInModal = () => {
   const { setLoginModal } = useContext(ModalContext);
   const { showAlert } = useContext(AlertContext);
 
-  const { login, googleLogin, register } = useAuth();
+  const { login, googleLogin, register, loading } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
-  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmitLogIn = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setIsLoading(true);
 
     const form = e.currentTarget;
     const formData = new FormData(form);
     const email = formData.get("email")?.toString().trim() ?? "";
     const password = formData.get("password")?.toString() ?? "";
 
-    const success = await login(email, password);
-
-    setIsLoading(false);
-
-    if (success) {
-      setLoginModal(false);
-    }
+    await login(email, password);
+    setLoginModal(false);
   };
 
   const handleSubmitSignIn = async (e: FormEvent<HTMLFormElement>) => {
@@ -78,9 +71,7 @@ export const LogInModal = () => {
       return;
     }
 
-    setIsLoading(true);
     const success = await register(name, email, password);
-    setIsLoading(false);
 
     if (success) {
       setLoginModal(false);
@@ -91,10 +82,12 @@ export const LogInModal = () => {
     setIsLogin(!isLogin);
   };
 
-  const handleGoogleSuccess = (credentialResponse: CredentialResponse) => {
+  const handleGoogleSuccess = async (
+    credentialResponse: CredentialResponse,
+  ) => {
     const token = credentialResponse.credential;
 
-    googleLogin(token);
+    await googleLogin(token);
 
     setLoginModal(false);
   };
@@ -180,9 +173,9 @@ export const LogInModal = () => {
 
         <Button
           type="submit"
-          text={isLoading ? "Loading..." : isLogin ? "Log in" : "Sign up"}
+          text={loading ? "Loading..." : isLogin ? "Log in" : "Sign up"}
           className="my-4"
-          disabled={isLoading}
+          disabled={loading}
         />
       </form>
       <p>
@@ -210,6 +203,6 @@ export const LogInModal = () => {
         />
       </div>
     </motion.div>,
-    document.body
+    document.body,
   );
 };

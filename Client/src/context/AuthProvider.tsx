@@ -6,6 +6,7 @@ const apiUrl = import.meta.env.VITE_API_URL;
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const { showAlert } = useContext(AlertContext);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     fetch(`${apiUrl}/auth/me`, {
@@ -23,6 +24,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
+      setLoading(true);
       const response = await fetch(`${apiUrl}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -33,14 +35,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (!response.ok) {
         const error = await response.json();
         showAlert({
-          type: 'error',
-          title: 'Login Failed',
-          message: error.message || 'Invalid credentials'
+          type: "error",
+          title: "Login Failed",
+          message: error.message || "Invalid credentials",
         });
+        setLoading(false);
         return false;
       }
 
-      // El login exitoso guarda la cookie, ahora obtenemos el usuario
       const userResponse = await fetch(`${apiUrl}/auth/me`, {
         method: "GET",
         credentials: "include",
@@ -49,23 +51,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const userData = await userResponse.json();
       setUser(userData);
       showAlert({
-        type: 'success',
-        title: 'Welcome back!',
-        message: 'You have successfully logged in.'
+        type: "success",
+        title: "Welcome back!",
+        message: "You have successfully logged in.",
       });
+      setLoading(false);
       return true;
     } catch {
+      setLoading(false);
       showAlert({
-        type: 'error',
-        title: 'Connection Error',
-        message: 'Could not connect to the server'
+        type: "error",
+        title: "Connection Error",
+        message: "Could not connect to the server",
       });
       return false;
     }
   };
 
-  const register = async (name: string, email: string, password: string): Promise<boolean> => {
+  const register = async (
+    name: string,
+    email: string,
+    password: string,
+  ): Promise<boolean> => {
     try {
+      setLoading(true);
       const response = await fetch(`${apiUrl}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -76,26 +85,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (!response.ok) {
         const error = await response.json();
         showAlert({
-          type: 'error',
-          title: 'Registration Failed',
-          message: error.message || 'Could not create account'
+          type: "error",
+          title: "Registration Failed",
+          message: error.message || "Could not create account",
         });
+        setLoading(false);
         return false;
       }
 
       const data = await response.json();
       setUser(data.user);
       showAlert({
-        type: 'success',
-        title: 'Account Created!',
-        message: 'Your account has been successfully created.'
+        type: "success",
+        title: "Account Created!",
+        message: "Your account has been successfully created.",
       });
+      setLoading(false);
       return true;
     } catch {
+      setLoading(false);
       showAlert({
-        type: 'error',
-        title: 'Connection Error',
-        message: 'Could not connect to the server'
+        type: "error",
+        title: "Connection Error",
+        message: "Could not connect to the server",
       });
       return false;
     }
@@ -103,12 +115,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const googleLogin = async (googleToken: string | undefined) => {
     try {
+      setLoading(true);
       if (!googleToken) {
         showAlert({
-          type: 'error',
-          title: 'Google Login Error',
-          message: 'Google authentication token is missing'
+          type: "error",
+          title: "Google Login Error",
+          message: "Google authentication token is missing",
         });
+        setLoading(false);
         return;
       }
 
@@ -122,26 +136,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (!response.ok) {
         const error = await response.json();
         showAlert({
-          type: 'error',
-          title: 'Google Login Failed',
-          message: error.message || 'Could not authenticate with Google'
+          type: "error",
+          title: "Google Login Failed",
+          message: error.message || "Could not authenticate with Google",
         });
+        setLoading(false);
         return;
       }
 
       const data = await response.json();
       setUser(data.user);
       showAlert({
-        type: 'success',
-        title: 'Welcome!',
-        message: 'Successfully logged in with Google.'
+        type: "success",
+        title: "Welcome!",
+        message: "Successfully logged in with Google.",
       });
+      setLoading(false);
     } catch {
       showAlert({
-        type: 'error',
-        title: 'Connection Error',
-        message: 'Could not connect to the server'
+        type: "error",
+        title: "Connection Error",
+        message: "Could not connect to the server",
       });
+      setLoading(false);
     }
   };
 
@@ -158,7 +175,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <AuthContext.Provider
-      value={{ user, login, register, googleLogin, logout }}
+      value={{ user, login, register, googleLogin, logout, loading }}
     >
       {children}
     </AuthContext.Provider>

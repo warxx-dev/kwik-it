@@ -6,18 +6,16 @@ import {
   UseGuards,
   Req,
   Get,
-  UnauthorizedException,
-  BadRequestException,
 } from '@nestjs/common';
 import * as express from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/registerDto';
 import { GoogleLoginDto } from './dto/googleLoginDto';
-import { User } from '../user/entities/user.entity';
 import { type AuthRequest } from './interfaces/auth.interface';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { Cookies } from '../../decorators/cookies.decorator';
+import { User } from 'src/generated/prisma/client';
 
 @Controller('auth')
 export class AuthController {
@@ -45,23 +43,15 @@ export class AuthController {
     @Res({ passthrough: true }) res: express.Response,
   ) {
     const result = await this.authService.register(registerData);
-    console.log('Register result:', result); // Debug log
-    return result.fold(
-      (data) => {
-        res.cookie('access_token', data.access_token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-          maxAge: 7 * 24 * 60 * 60 * 1000,
-        });
-        return data;
-      },
-      (error) => {
-        throw new BadRequestException(
-          typeof error === 'string' ? error : error.message,
-        );
-      },
-    );
+    if (result) {
+      res.cookie('access_token', result.access_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+      return result;
+    }
   }
 
   @Post('google')
@@ -71,22 +61,14 @@ export class AuthController {
   ) {
     const result = await this.authService.google(googleLoginData);
 
-    return result.fold(
-      (data) => {
-        res.cookie('access_token', data.access_token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-          maxAge: 7 * 24 * 60 * 60 * 1000,
-        });
-        return data;
-      },
-      (error) => {
-        throw new UnauthorizedException(
-          typeof error === 'string' ? error : error.message,
-        );
-      },
-    );
+    if (result)
+      res.cookie('access_token', result.access_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+    return result;
   }
 
   @Get('me')
@@ -97,15 +79,8 @@ export class AuthController {
     if (!token || typeof token !== 'string') {
       return null;
     }
-    const result = await this.authService.validateToken(token);
-    return result.fold(
-      (user) => user,
-      (error) => {
-        throw new UnauthorizedException(
-          typeof error === 'string' ? error : error.message,
-        );
-      },
-    );
+    const user = await this.authService.validateToken(token);
+    return user;
   }
 
   @UseGuards(JwtAuthGuard)
