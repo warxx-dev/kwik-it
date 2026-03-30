@@ -1,8 +1,6 @@
-import { User } from 'src/modules/user/entities/user.entity';
+import { User } from 'src/generated/prisma/client';
 
 export type AuthSuccessData = {
   access_token: string;
   user: User;
 };
-
-export type AuthError = string | Error;

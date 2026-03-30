@@ -3,17 +3,15 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { UserModule } from '../user/user.module';
 import { JwtModule } from '@nestjs/jwt';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { User } from '../user/entities/user.entity';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { LocalStrategy } from './strategies/local.strategy';
 import { ConfigModule, ConfigType } from '@nestjs/config';
 import googleConfig from './config/google.config';
 import jwtConfig from './config/jwt.config';
+import { PrismaService } from 'src/prisma.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User]),
     UserModule,
     ConfigModule.forFeature(googleConfig),
     ConfigModule.forFeature(jwtConfig),
@@ -26,7 +24,7 @@ import jwtConfig from './config/jwt.config';
       }),
     }),
   ],
-  providers: [AuthService, JwtStrategy, LocalStrategy],
+  providers: [AuthService, JwtStrategy, LocalStrategy, PrismaService],
   controllers: [AuthController],
 })
 export class AuthModule {}

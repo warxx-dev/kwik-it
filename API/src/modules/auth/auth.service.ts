@@ -1,16 +1,19 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { UserService } from '../user/user.service';
-import { InjectRepository } from '@nestjs/typeorm';
-import { User } from '../user/entities/user.entity';
-import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { GoogleLoginDto } from './dto/googleLoginDto';
 import { OAuth2Client } from 'google-auth-library';
 import { AuthUser } from './interfaces/user.interface';
 import { RegisterDto } from './dto/registerDto';
 import * as bcrypt from 'bcryptjs';
-import { Result } from '../../utils';
-import { AuthError, AuthSuccessData } from './types';
+import { AuthSuccessData } from './types';
+import { User } from 'src/generated/prisma/client';
+import { PrismaService } from 'src/prisma.service';
 
 @Injectable()
 export class AuthService {
@@ -19,7 +22,7 @@ export class AuthService {
   constructor(
     private readonly jwtService: JwtService,
     private readonly userService: UserService,
-    @InjectRepository(User) private readonly userRepository: Repository<User>,
+    private readonly prisma: PrismaService,
   ) {
     this.googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
   }
@@ -28,22 +31,13 @@ export class AuthService {
     email: string,
     pass: string,
   ): Promise<Partial<User> | null> {
-    const result = await this.userService.findByEmail(email);
-    console.log(`Validating user: ${email}`); // --- IGNORE ---
-    console.log(`Password received: "${pass}"`); // --- IGNORE ---
-    if (result.isSuccess) {
-      const user = result.getData();
-      console.log(`User found:`, user); // --- IGNORE ---
-      if (user && user.password) {
-        console.log(`Stored hash: ${user.password}`); // --- IGNORE ---
-        const isPasswordValid = await bcrypt.compare(pass, user.password);
-        console.log(`Password valid: ${isPasswordValid}`); // --- IGNORE ---
-        if (isPasswordValid) {
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const { password, ...restData } = user;
-          console.log(`User ${email} validated successfully`); // --- IGNORE ---
-          return restData;
-        }
+    const user = await this.userService.findUserByEmail(email);
+    if (user && user.password) {
+      const isPasswordValid = await bcrypt.compare(pass, user.password);
+      if (isPasswordValid) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { password, ...restData } = user;
+        return restData;
       }
     }
     return null;
@@ -56,54 +50,46 @@ export class AuthService {
     };
   }
 
-  async register(
-    resgisterData: RegisterDto,
-  ): Promise<Result<AuthSuccessData, AuthError>> {
+  async register(resgisterData: RegisterDto): Promise<AuthSuccessData> {
     try {
       const { email, password, name } = resgisterData;
-      console.log('Register - Raw password received:', `"${password}"`); // --- DEBUG ---
-      console.log('Register - Password length:', password.length); // --- DEBUG ---
 
-      const existingUser = await this.userRepository.findOne({
+      const existingUser = await this.prisma.user.findUnique({
         where: { email },
       });
+      console.log('Existing user:', existingUser);
 
       if (existingUser) {
-        return Result.failure('User with this email already exists');
+        throw new ConflictException('User with this email already exists');
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);
-      console.log('Register - Hashed password:', hashedPassword); // --- DEBUG ---
+      console.log('Hashed password:', hashedPassword);
 
-      const result = await this.userService.create({
+      const user = await this.userService.createUser({
         email: email,
         password: hashedPassword,
         name: name,
       });
+      console.log('Created user:', user);
 
-      return result.fold(
-        (user) => {
-          const payload = {
-            email: user.email,
-          };
+      const payload = {
+        email: user.email,
+      };
 
-          return Result.success({
-            access_token: this.jwtService.sign(payload),
-            user: user,
-          });
-        },
-        (error) => {
-          return Result.failure(error);
-        },
-      );
+      return {
+        access_token: this.jwtService.sign(payload),
+        user: user,
+      };
     } catch (error) {
-      return Result.failure(error as Error);
+      console.log('Error during registration:', error);
+      throw new InternalServerErrorException(error as Error);
     }
   }
 
   async google(
     googleLoginDto: GoogleLoginDto,
-  ): Promise<Result<AuthSuccessData, AuthError>> {
+  ): Promise<AuthSuccessData | undefined> {
     try {
       const ticket = await this.googleClient.verifyIdToken({
         idToken: googleLoginDto.token,
@@ -112,50 +98,47 @@ export class AuthService {
 
       const payload = ticket.getPayload();
       if (!payload) {
-        return Result.failure('Invalid Google token');
+        throw new BadRequestException('Invalid Google token');
       }
 
       const { email, name, picture } = payload;
 
-      let user = await this.userRepository.findOne({
-        where: { email },
-      });
+      if (email) {
+        let user = await this.userService.findUserByEmail(email);
 
-      if (!user) {
-        user = this.userRepository.create({
-          email,
-          name,
-          picture,
-        });
-        await this.userRepository.save(user);
-      } else {
-        if (!user.picture && picture) {
-          await this.userService.update(email!, { picture });
+        if (!user) {
+          user = await this.userService.createUser({
+            email,
+            name,
+            picture,
+          });
+        } else {
+          if (!user.picture && picture) {
+            await this.userService.updateUser(email, { picture });
+          }
         }
+
+        const jwtPayload = { email: user.email };
+        const accessToken = this.login(jwtPayload);
+
+        return {
+          access_token: accessToken.access_token,
+          user,
+        };
       }
-
-      const jwtPayload = { email: user.email };
-      const accessToken = this.login(jwtPayload);
-
-      return Result.success({
-        access_token: accessToken.access_token,
-        user,
-      });
     } catch (e) {
-      return Result.failure(e);
+      throw new InternalServerErrorException(e);
     }
   }
 
-  async validateToken(token: string): Promise<Result<User, AuthError>> {
+  async validateToken(token: string): Promise<User> {
     try {
       const decoded: { email: string } = this.jwtService.verify(token);
-      const result = await this.userService.findByEmail(decoded.email);
-      return result.fold(
-        (user) => Result.success(user),
-        (error) => Result.failure(error),
-      );
+      const user = await this.userService.findUserByEmail(decoded.email);
+      if (!user) throw new InternalServerErrorException('Invalid token');
+      return user;
     } catch (e) {
-      return Result.failure(e);
+      throw new InternalServerErrorException(e);
     }
   }
 }

@@ -1,19 +1,11 @@
-import { forwardRef, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { LinkController } from './link.controller';
 import { LinkService } from './link.service';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { Link } from './entities/link.entity';
-import { UserModule } from '../user/user.module';
-import { ScheduleModule } from '@nestjs/schedule';
+import { PrismaService } from 'src/prisma.service';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Link]),
-    forwardRef(() => UserModule),
-    ScheduleModule.forRoot(),
-  ],
   controllers: [LinkController],
-  providers: [LinkService],
+  providers: [LinkService, PrismaService],
   exports: [LinkService],
 })
 export class LinkModule {}

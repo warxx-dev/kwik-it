@@ -9,10 +9,10 @@ const apiUrl = import.meta.env.VITE_API_URL;
 
 export const DeleteModal = ({
   setDeleteModal,
-  code,
+  id,
 }: {
   setDeleteModal: Dispatch<SetStateAction<boolean>>;
-  code: string;
+  id: number;
 }) => {
   const { links, setLinks } = useContext(LinkContext);
   const { showAlert } = useContext(AlertContext);
@@ -21,13 +21,14 @@ export const DeleteModal = ({
     setDeleteModal(false);
   };
   const handleDelete = () => {
-    fetch(`${apiUrl}/link/${code}`, {
+    fetch(`${apiUrl}/link/${id}`, {
       method: "DELETE",
+      credentials: "include",
     }).then((response) => {
       if (!response.ok) {
         console.error("Error deleting link");
       }
-      setLinks(links.filter((link) => link.code !== code));
+      setLinks(links.filter((link) => link.id !== id));
       showAlert({
         type: "success",
         title: "Link Deleted",
@@ -72,6 +73,6 @@ export const DeleteModal = ({
         />
       </nav>
     </motion.section>,
-    document.body
+    document.body,
   );
 };
