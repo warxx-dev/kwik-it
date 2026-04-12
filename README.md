@@ -1,6 +1,6 @@
 # 🔗 Kwik-it
 
-Una aplicación web फुल-stack (Full-Stack) diseñada para acortar, gestionar y organizar URLs de manera eficiente. Proporciona un sistema seguro de autenticación de usuarios y paneles de control intuitivos para la gestión de los enlaces acortados.
+Una aplicación web Full-stack diseñada para acortar, gestionar y organizar URLs de manera eficiente. Proporciona un sistema seguro de autenticación de usuarios y paneles de control intuitivos para la gestión de los enlaces acortados.
 
 ## 🚀 Funcionalidades Principales
 
