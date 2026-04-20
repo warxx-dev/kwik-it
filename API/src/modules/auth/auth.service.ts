@@ -13,7 +13,7 @@ import { RegisterDto } from './dto/registerDto';
 import * as bcrypt from 'bcryptjs';
 import { AuthSuccessData } from './types';
 import { User } from 'src/generated/prisma/client';
-import { PrismaService } from 'src/prisma.service';
+import { PrismaService } from '../../prisma.service';
 
 @Injectable()
 export class AuthService {

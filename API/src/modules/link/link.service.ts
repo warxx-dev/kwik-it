@@ -6,8 +6,8 @@ import {
 import { generateCode } from '../../utils';
 import { Cron } from '@nestjs/schedule/dist/decorators/cron.decorator';
 import { CronExpression } from '@nestjs/schedule/dist/enums/cron-expression.enum';
-import { PrismaService } from 'src/prisma.service';
-import { Link, Prisma } from 'src/generated/prisma/client';
+import { PrismaService } from '../../prisma.service';
+import { Link, Prisma } from '../../generated/prisma/client';
 
 @Injectable()
 export class LinkService {
