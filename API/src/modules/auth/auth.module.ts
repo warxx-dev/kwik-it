@@ -8,7 +8,7 @@ import { LocalStrategy } from './strategies/local.strategy';
 import { ConfigModule, ConfigType } from '@nestjs/config';
 import googleConfig from './config/google.config';
 import jwtConfig from './config/jwt.config';
-import { PrismaService } from 'src/prisma.service';
+import { PrismaService } from '../../prisma.service';
 
 @Module({
   imports: [

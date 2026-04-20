@@ -4,8 +4,8 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from 'src/prisma.service';
-import { Prisma, User } from 'src/generated/prisma/client';
+import { PrismaService } from '../../prisma.service';
+import { Prisma, User } from '../../generated/prisma/client';
 
 @Injectable()
 export class UserService {
