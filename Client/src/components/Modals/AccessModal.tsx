@@ -7,12 +7,7 @@ import { useState, useContext } from "react";
 import { ModalContext } from "../../context/modalContext";
 import { AnimatePresence, motion } from "framer-motion";
 import { createPortal } from "react-dom";
-import {
-  useForm,
-  type FieldValues,
-  type SubmitHandler,
-  type UseFormRegister,
-} from "react-hook-form";
+import { useForm, type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   LoginSchema,
@@ -106,7 +101,7 @@ export const LogInModal = () => {
             >
               <Input
                 errors={signupForm.formState.errors.name?.message}
-                register={signupForm.register as UseFormRegister<FieldValues>}
+                register={signupForm.register}
                 placeholder="Jhon Doe"
                 text="Full Name"
                 name="name"
@@ -122,11 +117,7 @@ export const LogInModal = () => {
               ? loginForm.formState.errors.email?.message
               : signupForm.formState.errors.email?.message
           }
-          register={
-            (isLogin
-              ? loginForm.register
-              : signupForm.register) as UseFormRegister<FieldValues>
-          }
+          register={isLogin ? loginForm.register : signupForm.register}
           placeholder="example@email.com"
           text="Email"
           name="email"
@@ -139,11 +130,7 @@ export const LogInModal = () => {
               ? loginForm.formState.errors.password?.message
               : signupForm.formState.errors.password?.message
           }
-          register={
-            (isLogin
-              ? loginForm.register
-              : signupForm.register) as UseFormRegister<FieldValues>
-          }
+          register={isLogin ? loginForm.register : signupForm.register}
           placeholder="••••••••"
           text="Password"
           name="password"
@@ -161,7 +148,7 @@ export const LogInModal = () => {
             >
               <Input
                 errors={signupForm.formState.errors.repeatPassword?.message}
-                register={signupForm.register as UseFormRegister<FieldValues>}
+                register={signupForm.register}
                 placeholder="••••••••"
                 text="Repeat password"
                 name="repeatPassword"

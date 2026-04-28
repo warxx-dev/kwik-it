@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from "react";
-import type { FieldValues, UseFormRegister } from "react-hook-form";
+import type { FieldValues, Path, UseFormRegister } from "react-hook-form";
 
 export interface scissorsSvgProps {
   width: number;
@@ -14,17 +14,17 @@ export type Link = {
   id: number;
 };
 
-export interface inputProps {
+export interface inputProps<TFormValues extends FieldValues = any> {
   placeholder: string;
   text: string;
-  name: string;
+  name: Path<TFormValues>;
   required?: boolean;
   type?: string;
   icon?: React.ReactNode;
   className?: string;
   defaultValue?: string;
   errors?: string;
-  register: UseFormRegister<FieldValues>;
+  register: UseFormRegister<TFormValues>;
 }
 
 type ButtonClickHandler =
