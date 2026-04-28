@@ -10,6 +10,6 @@ export const ModalBackground = ({ onClick }: ModalBackgroundProps) => {
       onClick={onClick}
       className="w-dvw h-dvh backdrop-blur-sm fixed top-0 left-0 bg-black/20 z-20"
     ></div>,
-    document.body
+    document.body,
   );
 };

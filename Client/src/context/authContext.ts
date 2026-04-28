@@ -10,7 +10,7 @@ export interface User {
 export interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<boolean>;
-  register: (name: string, email: string, password: string) => Promise<boolean>;
+  signin: (name: string, email: string, password: string) => Promise<boolean>;
   googleLogin: (token: string | undefined) => Promise<void>;
   logout: () => void;
   loading: boolean;

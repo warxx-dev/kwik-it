@@ -9,6 +9,8 @@ export const Input = ({
   required,
   icon,
   defaultValue,
+  errors,
+  register,
 }: inputProps) => {
   const [validPassword, setValidPassword] = useState<boolean>(false);
   const [touched, setTouched] = useState<boolean>(false);
@@ -20,7 +22,7 @@ export const Input = ({
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!#%*?&])[A-Za-z\d@$!#%*?&]{8,}$/;
     if (name === "repeatPassword") {
       const mainPassword = document.querySelector(
-        'input[name="password"]'
+        'input[name="password"]',
       ) as HTMLInputElement | null;
       setValidPassword(mainPassword?.value === password);
     } else {
@@ -35,6 +37,7 @@ export const Input = ({
         {text}
       </label>
       <input
+        {...register(name)}
         defaultValue={defaultValue}
         autoComplete={type === "password" ? "current-password" : "off"}
         onChange={type === "password" ? handlePasswordChange : undefined}
@@ -50,6 +53,7 @@ export const Input = ({
         } p-2.5 rounded-lg bg-gray-900 w-full border border-gray-600 transition-all duration-200 ease-in-out  focus-visible:ring-2 focus-visible:outline-none`}
         {...(required ? { required: true } : {})}
       />
+      {errors && <p className="text-red-400">{errors}</p>}
     </div>
   );
 };

@@ -68,7 +68,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const register = async (
+  const signin = async (
     name: string,
     email: string,
     password: string,
@@ -175,7 +175,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <AuthContext.Provider
-      value={{ user, login, register, googleLogin, logout, loading }}
+      value={{ user, login, signin, googleLogin, logout, loading }}
     >
       {children}
     </AuthContext.Provider>

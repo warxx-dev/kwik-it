@@ -3,75 +3,42 @@ import { Input } from "../UI/Input";
 import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
 import { XIcon } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
-import { useState, useContext, type FormEvent } from "react";
+import { useState, useContext } from "react";
 import { ModalContext } from "../../context/modalContext";
-import { AlertContext } from "../../context/alertContext";
 import { AnimatePresence, motion } from "framer-motion";
 import { createPortal } from "react-dom";
+import { useForm, type SubmitHandler } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  LoginSchema,
+  SigninSchema,
+  type LoginData,
+  type SigninData,
+} from "../../schema/auth-schema";
 
 export const LogInModal = () => {
   const { setLoginModal } = useContext(ModalContext);
-  const { showAlert } = useContext(AlertContext);
 
-  const { login, googleLogin, register, loading } = useAuth();
+  const { login, googleLogin, signin, loading } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
+  const loginForm = useForm<LoginData>({
+    resolver: zodResolver(LoginSchema),
+  });
+  const signupForm = useForm<SigninData>({
+    resolver: zodResolver(SigninSchema),
+  });
 
-  const handleSubmitLogIn = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    const form = e.currentTarget;
-    const formData = new FormData(form);
-    const email = formData.get("email")?.toString().trim() ?? "";
-    const password = formData.get("password")?.toString() ?? "";
-
-    await login(email, password);
+  const handleSubmitLogIn: SubmitHandler<LoginData> = async (
+    data: LoginData,
+  ) => {
+    await login(data.email, data.password);
     setLoginModal(false);
   };
 
-  const handleSubmitSignIn = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const form = e.currentTarget;
-    const formData = new FormData(form);
-
-    const name = formData.get("fullName")?.toString().trim() ?? "";
-    const email = formData.get("email")?.toString().trim() ?? "";
-    const password = formData.get("password")?.toString() ?? "";
-    const repeatPassword = formData.get("repeatPassword")?.toString() ?? "";
-
-    // Validar nombre
-    if (name.length < 2) {
-      showAlert({
-        type: "error",
-        title: "Invalid Name",
-        message: "Name must be at least 2 characters",
-      });
-      return;
-    }
-
-    // Validar contraseñas coincidan
-    if (password !== repeatPassword) {
-      showAlert({
-        type: "error",
-        title: "Passwords Don't Match",
-        message: "Please make sure your passwords match",
-      });
-      return;
-    }
-
-    // Validar formato de contraseña
-    const passwordRegex =
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!#%*?&])[A-Za-z\d@$!#%*?&]{8,}$/;
-    if (!passwordRegex.test(password)) {
-      showAlert({
-        type: "error",
-        title: "Weak Password",
-        message:
-          "Password must contain uppercase, lowercase, number and special character",
-      });
-      return;
-    }
-
-    const success = await register(name, email, password);
+  const handleSubmitSignIn: SubmitHandler<SigninData> = async (
+    data: SigninData,
+  ) => {
+    const success = await signin(data.name, data.email, data.password);
 
     if (success) {
       setLoginModal(false);
@@ -115,7 +82,12 @@ export const LogInModal = () => {
         </button>
       </div>
       <form
-        onSubmit={isLogin ? handleSubmitLogIn : handleSubmitSignIn}
+        noValidate
+        onSubmit={
+          isLogin
+            ? loginForm.handleSubmit(handleSubmitLogIn)
+            : signupForm.handleSubmit(handleSubmitSignIn)
+        }
         className="flex flex-col gap-1"
       >
         <AnimatePresence mode="wait">
@@ -128,9 +100,11 @@ export const LogInModal = () => {
               className="flex flex-col gap-1 overflow-hidden"
             >
               <Input
+                errors={signupForm.formState.errors.name?.message}
+                register={signupForm.register}
                 placeholder="Jhon Doe"
                 text="Full Name"
-                name="fullName"
+                name="name"
                 type="text"
                 required={true}
               />
@@ -138,6 +112,12 @@ export const LogInModal = () => {
           )}
         </AnimatePresence>
         <Input
+          errors={
+            isLogin
+              ? loginForm.formState.errors.email?.message
+              : signupForm.formState.errors.email?.message
+          }
+          register={isLogin ? loginForm.register : signupForm.register}
           placeholder="example@email.com"
           text="Email"
           name="email"
@@ -145,6 +125,12 @@ export const LogInModal = () => {
           required={true}
         />
         <Input
+          errors={
+            isLogin
+              ? loginForm.formState.errors.password?.message
+              : signupForm.formState.errors.password?.message
+          }
+          register={isLogin ? loginForm.register : signupForm.register}
           placeholder="••••••••"
           text="Password"
           name="password"
@@ -161,6 +147,8 @@ export const LogInModal = () => {
               className="flex flex-col gap-1 overflow-hidden"
             >
               <Input
+                errors={signupForm.formState.errors.repeatPassword?.message}
+                register={signupForm.register}
                 placeholder="••••••••"
                 text="Repeat password"
                 name="repeatPassword"

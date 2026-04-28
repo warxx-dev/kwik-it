@@ -8,8 +8,8 @@ import { useScrollLock } from "../../hooks/useScrollLock";
 import type { TableCardProps } from "../../types";
 
 export const TableCard = ({
-  originalLink,
-  shortLink,
+  originalUrl,
+  shortCode,
   clicks,
   date,
   code,
@@ -19,7 +19,7 @@ export const TableCard = ({
   const [deleteModal, setDeleteModal] = useState(false);
   const [copied, setCopied] = useState(false);
   const handleCopy = () => {
-    navigator.clipboard.writeText(shortLink);
+    navigator.clipboard.writeText(shortCode);
     setCopied(true);
     setTimeout(() => setCopied(false), 1000);
   };
@@ -40,13 +40,13 @@ export const TableCard = ({
           <div className="flex gap-2 items-center">
             <div className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-full max-w-64 sm:max-w-none">
               <a
-                href={shortLink}
+                href={shortCode}
                 rel="noopener noreferrer"
-                title={shortLink}
+                title={shortCode}
                 className="text-emerald-400 font-mono text-sm font-semibold truncate block"
                 target="_blank"
               >
-                {shortLink}
+                {shortCode}
               </a>
             </div>
             <button
@@ -96,8 +96,8 @@ export const TableCard = ({
           </nav>
         </section>
         <div className="flex flex-col text-gray-300 items-start self-start">
-          <p className="truncate max-w-64 sm:max-w-96" title={originalLink}>
-            {originalLink}
+          <p className="truncate max-w-64 sm:max-w-96" title={originalUrl}>
+            {originalUrl}
           </p>
         </div>
         <section className="flex items-center gap-4 text-xs text-slate-400 self-start">
@@ -117,7 +117,7 @@ export const TableCard = ({
             <ModalBackground onClick={() => setEditModal(false)} />
             <EditModal
               shortCode={code}
-              originalLink={originalLink}
+              originalUrl={originalUrl}
               setEditModal={setEditModal}
               id={id}
             />

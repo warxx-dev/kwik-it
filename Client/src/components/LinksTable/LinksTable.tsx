@@ -30,6 +30,7 @@ export const LinksTable = () => {
         return response.json();
       })
       .then((data) => {
+        console.log("Fetched links:", data);
         setLinks(data);
         setIsLoading(false);
       })
@@ -68,8 +69,8 @@ export const LinksTable = () => {
                   id={link.id}
                   key={link.code}
                   code={link.code}
-                  originalLink={link.originalLink}
-                  shortLink={`${apiUrl}/${link.code}`}
+                  originalUrl={link.originalUrl}
+                  shortCode={`${apiUrl}/${link.code}`}
                   clicks={link.clicks}
                   date={new Date(link.createdAt).toLocaleDateString()}
                 />

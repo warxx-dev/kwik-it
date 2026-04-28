@@ -20,7 +20,7 @@ model User {
 
 model Link {
   id           Int      @id @default(autoincrement())
-  originalLink String
+  originalUrl  String
   code         String?  @unique
   clicks       Int      @default(0)
   userEmail    String?

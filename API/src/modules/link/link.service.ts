@@ -62,10 +62,10 @@ export class LinkService {
     email: string;
   }): Promise<Link> {
     try {
-      let { originalLink, code } = data;
+      let { originalUrl, code } = data;
 
-      if (!originalLink.startsWith('http'))
-        originalLink = 'https://' + originalLink;
+      if (!originalUrl.startsWith('http'))
+        originalUrl = 'https://' + originalUrl;
 
       let generatedCode: string;
       if (!code || code.length === 0) {
@@ -85,7 +85,7 @@ export class LinkService {
         const normalizedEmail = email.trim().toLowerCase();
         const link = await this.prisma.link.create({
           data: {
-            originalLink,
+            originalUrl,
             code,
             user: { connect: { email: normalizedEmail } },
           },
@@ -97,7 +97,7 @@ export class LinkService {
       } else {
         const link = await this.prisma.link.create({
           data: {
-            originalLink,
+            originalUrl,
             code,
           },
         });
@@ -113,7 +113,7 @@ export class LinkService {
 
   async updateLink(
     id: number,
-    { code, originalLink }: Prisma.LinkUpdateInput,
+    { code, originalUrl }: Prisma.LinkUpdateInput,
   ): Promise<Link> {
     try {
       const linkToUpdate = await this.prisma.link.findUnique({
@@ -126,7 +126,7 @@ export class LinkService {
 
       const linkUpdated = await this.prisma.link.update({
         where: { id },
-        data: { originalLink, code },
+        data: { originalUrl, code },
       });
 
       if (!linkUpdated) {
