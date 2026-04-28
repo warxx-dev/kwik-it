@@ -7,12 +7,12 @@ export class AppController {
 
   @Get('r/:code')
   @Redirect()
-  async redirectToOriginalLink(@Param('code') code: string) {
+  async redirectTooriginalUrl(@Param('code') code: string) {
     const link = await this.linkService.getLinkByCode(code);
 
     if (link) {
       await this.linkService.incrementClicks(link);
-      return { url: link.originalLink, statusCode: 302 };
+      return { url: link.originalUrl, statusCode: 302 };
     }
     return Promise.resolve({
       url: `${process.env.CLIENT_URL}?error=link-not-found`,

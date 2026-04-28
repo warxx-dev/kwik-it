@@ -53,7 +53,7 @@ export const Footer = () => {
         </article>
         <hr className="text-gray-600 w-full mt-6" />
         <p className="text-gray-400 py-8 px-14">
-          © 2025 Shortly. All rights reserved.
+          © {new Date().getFullYear()} Kwik-it. All rights reserved.
         </p>
       </div>
     </footer>

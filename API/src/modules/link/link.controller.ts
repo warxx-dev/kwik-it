@@ -45,9 +45,9 @@ export class LinkController {
 
   @Post()
   async create(@Body() body: CreateLinkDto): Promise<Link> {
-    const { originalLink, code, email } = body;
+    const { originalUrl, code, email } = body;
     return await this.linkService.createLink({
-      data: { originalLink, code },
+      data: { originalUrl, code },
       email,
     });
   }
@@ -58,10 +58,10 @@ export class LinkController {
     @Param('id') id: number,
     @Body() body: UpdateLinkDto,
   ): Promise<Link> {
-    const { code, originalLink } = body;
+    const { code, originalUrl } = body;
     return await this.linkService.updateLink(id, {
       code,
-      originalLink,
+      originalUrl,
     });
   }
 

@@ -13,7 +13,6 @@ export const Button = ({
 }: buttonProps) => {
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (onClick) {
-      // Verifica la aridad (número de parámetros) de la función
       if (onClick.length === 0) {
         (onClick as () => void)();
       } else {

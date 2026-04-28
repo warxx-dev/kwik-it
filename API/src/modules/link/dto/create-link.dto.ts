@@ -2,7 +2,7 @@ import { IsOptional, IsString } from 'class-validator';
 
 export class CreateLinkDto {
   @IsString()
-  readonly originalLink: string;
+  readonly originalUrl: string;
 
   @IsString()
   @IsOptional()

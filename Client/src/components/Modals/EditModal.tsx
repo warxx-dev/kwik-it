@@ -7,11 +7,14 @@ import type { EditModalProps } from "../../types";
 import { useContext } from "react";
 import { LinkContext } from "../../context/linkContext";
 import { AlertContext } from "../../context/alertContext";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { LinkSchema, type LinkData } from "../../schema/link-schema";
 const apiUrl = import.meta.env.VITE_API_URL;
 
 export const EditModal = ({
   shortCode,
-  originalLink,
+  originalUrl,
   setEditModal,
   id,
 }: EditModalProps) => {
@@ -21,21 +24,21 @@ export const EditModal = ({
     e.preventDefault();
     setEditModal(false);
   };
-  const handleUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    const form = e.currentTarget;
-    const formData = new FormData(form);
-    const updatedShortCode = formData.get("shortCode")?.toString() ?? "";
-    const updatedOriginalLink = formData.get("originalLink")?.toString() ?? "";
-
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<LinkData>({
+    resolver: zodResolver(LinkSchema),
+  });
+  const handleUpdate = async (data: LinkData) => {
     try {
       const res = await fetch(`${apiUrl}/link/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          code: updatedShortCode,
-          originalLink: updatedOriginalLink,
+          code: data.shortCode || shortCode,
+          originalUrl: data.originalUrl,
         }),
         credentials: "include",
       });
@@ -52,8 +55,8 @@ export const EditModal = ({
             link.id === id
               ? {
                   ...link,
-                  code: updatedShortCode,
-                  originalLink: updatedOriginalLink,
+                  code: data.shortCode || shortCode,
+                  originalUrl: data.originalUrl,
                 }
               : link,
           ),
@@ -80,18 +83,25 @@ export const EditModal = ({
           onClick={handleClose}
         />
       </div>
-      <form className="p-6 flex flex-col gap-2" onSubmit={handleUpdate}>
+      <form
+        className="p-6 flex flex-col gap-2"
+        onSubmit={handleSubmit(handleUpdate)}
+      >
         <Input
+          errors={errors.shortCode?.message}
+          register={register}
           placeholder="Short code"
           text="Short code"
           name="shortCode"
           defaultValue={shortCode}
         />
         <Input
+          errors={errors.originalUrl?.message}
+          register={register}
           placeholder="Original URL"
           text="Original URL"
-          name="originalLink"
-          defaultValue={originalLink}
+          name="originalUrl"
+          defaultValue={originalUrl}
         />
         <nav className="flex gap-2 mt-4">
           <Button
@@ -100,7 +110,12 @@ export const EditModal = ({
             text="Cancel"
             onClick={handleClose}
           />
-          <Button text="Save changes" className="flex-1" type="submit" />
+          <Button
+            disabled={isSubmitting}
+            text={isSubmitting ? "Saving..." : "Save changes"}
+            className="flex-1"
+            type="submit"
+          />
         </nav>
       </form>
     </motion.section>,

@@ -19,7 +19,7 @@ export const Avatar = () => {
   const handleMouseLeave = () => {
     timeoutRef.current = setTimeout(() => {
       setShowLogOut(false);
-    }, 300);
+    }, 1000);
   };
 
   useEffect(() => {
@@ -33,6 +33,10 @@ export const Avatar = () => {
   return (
     <div
       ref={containerRef}
+      onClick={() => {
+        setShowLogOut(true);
+        setTimeout(() => setShowLogOut(false), 3000);
+      }}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       className="group relative flex items-center gap-4 rounded-3xl"

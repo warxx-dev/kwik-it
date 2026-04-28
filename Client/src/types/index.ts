@@ -1,4 +1,5 @@
 import type { Dispatch, SetStateAction } from "react";
+import type { FieldValues, UseFormRegister } from "react-hook-form";
 
 export interface scissorsSvgProps {
   width: number;
@@ -6,7 +7,7 @@ export interface scissorsSvgProps {
 }
 
 export type Link = {
-  originalLink: string;
+  originalUrl: string;
   code: string;
   clicks: number;
   createdAt: Date;
@@ -22,6 +23,8 @@ export interface inputProps {
   icon?: React.ReactNode;
   className?: string;
   defaultValue?: string;
+  errors?: string;
+  register: UseFormRegister<FieldValues>;
 }
 
 type ButtonClickHandler =
@@ -43,8 +46,8 @@ export interface buttonProps {
 }
 
 export interface TableCardProps {
-  originalLink: string;
-  shortLink: string;
+  originalUrl: string;
+  shortCode: string;
   code: string;
   clicks: number;
   date: string;
@@ -53,7 +56,7 @@ export interface TableCardProps {
 
 export interface EditModalProps {
   shortCode: string;
-  originalLink: string;
+  originalUrl: string;
   setEditModal: Dispatch<SetStateAction<boolean>>;
   id: number;
 }
